@@ -1,0 +1,74 @@
+.chat-container {
+  flex: 1;
+  background-color: #0b1e3a;
+  padding: 20px;
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+.chat-message {
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.chat-message.agent {
+  color: #4f46e5;
+}
+
+.chat-message.vendor {
+  background-color: #6c1013;
+  color: #000000;
+}
+
+.chat-input-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+}
+
+.chat-button {
+  background-color: #4f46e5;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.chat-button:hover {
+  background-color: #3b82f6;
+}
+
+.voice-call-container {
+  margin-top: 20px;
+  background-color: #334155;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.voice-call-container h2 {
+  margin-bottom: 10px;
+}
+
+.call-button,
+.end-call-button {
+  background-color: #4f46e5;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.call-button:hover,
+.end-call-button:hover {
+  background-color: #3b82f6;
+}

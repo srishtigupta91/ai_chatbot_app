@@ -1,0 +1,34 @@
+{
+  "name": "ai-chatbot-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@vapi-ai/web": "^2.2.6",
+    "axios": "^1.8.4",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0"
+  },
+  "devDependencies": {
+    "react-scripts": "^5.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

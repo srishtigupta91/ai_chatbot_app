@@ -1,0 +1,57 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.swp
+*.swo
+*.DS_Store
+
+# Virtual environment
+venv/
+backend/.env/
+.envrc
+*.env
+.venv/
+
+# Django
+db.sqlite3
+*.log
+media/
+staticfiles/
+*.pot
+*.py[cod]
+*.sqlite3
+*.mo
+*.pytest.ini
+# pytest
+.cache/
+.pytest_cache/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.idea
+# Node.js (if applicable for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+tests/
+
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+*.coverage.*
+
+# Miscellaneous
+*.bak
+*.tmp
+*.old
+
+# Migrations
+migrations/
