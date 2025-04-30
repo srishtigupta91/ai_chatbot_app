@@ -5,13 +5,10 @@ const VendorDashboard = ({ companyId, initialGreeting }) => {
   const [messages, setMessages] = useState([]); // Chat messages
   const [input, setInput] = useState(''); // User input
 
-  // Add the initial greeting to the chat when the component mounts
+  // Add the initial greeting to the chat only once when the component mounts
   useEffect(() => {
-    if (initialGreeting) {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { sender: 'agent', text: initialGreeting },
-      ]);
+    if (initialGreeting && messages.length === 0) {
+      setMessages([{ sender: 'agent', text: initialGreeting }]);
     }
   }, [initialGreeting]);
 

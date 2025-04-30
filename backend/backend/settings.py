@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-i7eiz-4o^tb1-o-j$ni6m8wwejfy8zhu76^jck%ylgga%^=uu+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,7 +38,7 @@ LOCAL_APPS = [
     "lead_profile",
     "products",
     'events',
-    'transcription'
+    'transcription',
 ]
 
 THIRD_PARTY_APPS = [
@@ -100,7 +100,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+# WSGI_APPLICATION = 'backend.wsgi.application'
 
 ASGI_APPLICATION = "backend.asgi.application"
 
@@ -191,3 +191,44 @@ CHANNEL_LAYERS = {
 DJANGO_SETTINGS_MODULE = 'backend.settings'
 testpaths = 'tests'
 python_files = 'tests.py test_*.py *_tests.py'
+
+# Loggers Settings
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/application.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'transcriber': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

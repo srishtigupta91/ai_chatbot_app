@@ -1,14 +1,9 @@
 import os
-import subprocess
 from datetime import datetime
 
-import moviepy
 import requests
 from PyPDF2 import PdfReader
-from django.conf.locale import sr
-from django.core.files.storage import FileSystemStorage
 from django.shortcuts import get_object_or_404
-from psycopg2 import DatabaseError
 from rest_framework import viewsets, views, response, status
 from rest_framework.exceptions import ValidationError, APIException
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -147,7 +142,6 @@ class ConversationView(views.APIView):
                 lead = lead,
                 session_id=session_id
             ).last()
-            # breakpoint()
             if not conversation:
                 conversation, _ = Conversation.objects.get_or_create(
                     role='human',
@@ -230,3 +224,38 @@ class ConversationView(views.APIView):
         except Exception as e:
             return response.Response({'error': f'Unexpected error: {str(e)}'},
                                      status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TranscribeAudioView(views.APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        # Check if an audio file is provided
+        breakpoint()
+        audio_file = request.FILES.get('file')
+        if not audio_file:
+            return response.Response({"error": "No audio file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Define the Deepgram API endpoint and headers
+        url = "https://api.deepgram.com/v1/listen"
+        headers = {
+            "Authorization": f"Token {os.getenv('DEEPGRAM_API_KEY')}",
+            "Content-Type": "audio/*"
+        }
+
+        try:
+            # Send the audio file to the Deepgram API
+            result = requests.post(url, headers=headers, data=audio_file)
+            response_data = result.json()
+
+            # Check for errors in the Deepgram API response
+            if result.status_code != 200:
+                return response.Response({"error": response_data.get("error", "Failed to transcribe audio.")},
+                                status=result.status_code)
+
+            # Return the transcription result
+            return response.Response(response_data, status=status.HTTP_200_OK)
+
+        except requests.RequestException as e:
+            return response.Response({"error": f"Request to Deepgram API failed: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,84 +1,70 @@
-import json
-import logging
-import asyncio
-import websockets
+import os
+
 from channels.generic.websocket import AsyncWebsocketConsumer
+import json
+from dotenv import load_dotenv
+from deepgram import DeepgramClient, LiveTranscriptionEvents, LiveOptions
 
-logger = logging.getLogger("transcriber")
+load_dotenv()
 
-DEEPGRAM_API_KEY = "13c9fb99673346458a52cc97a80937d2f8bf1623"  # replace with env variable or settings
-DEEPGRAM_URL = "wss://api.deepgram.com/v1/listen?model=nova-2&interim_results=true&smart_format=true&language=en&multichannel=true"
+class DeepgramWebSocket(AsyncWebsocketConsumer):
 
-class TranscriberConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        # Accept the WebSocket connection
         await self.accept()
-        logger.info("WebSocket client connected")
+        self.deepgram_client = DeepgramClient(api_key=os.getenv('DEEPGRAM_API_KEY'))
+        self.dg_connection = self.deepgram_client.listen.websocket.v("1")
+        self.is_finals = []
 
-        # Start connection to Deepgram
-        self.deepgram_ws = await websockets.connect(
-            DEEPGRAM_URL,
-            extra_headers={"Authorization": f"Token {DEEPGRAM_API_KEY}"},
-        )
-        self.transcript_buffer = {"customer": "", "assistant": ""}
-        self.debounce_delay = 3  # seconds
-
-        # Start background listener
-        self.listener_task = asyncio.create_task(self.listen_to_deepgram())
+        # Setup Deepgram event listeners
+        self.dg_connection.on(LiveTranscriptionEvents.Transcript, self.on_message)
+        self.dg_connection.on(LiveTranscriptionEvents.Close, self.on_close)
+        self.dg_connection.on(LiveTranscriptionEvents.Error, self.on_error)
 
     async def disconnect(self, close_code):
-        logger.info("WebSocket client disconnected")
-        if hasattr(self, "deepgram_ws"):
-            await self.deepgram_ws.close()
-        if hasattr(self, "listener_task"):
-            self.listener_task.cancel()
+        # Close the Deepgram connection
+        self.dg_connection.finish()
 
-    async def receive(self, text_data=None, bytes_data=None):
-        if text_data:
-            try:
-                msg = json.loads(text_data)
-                if msg.get("type") == "start":
-                    logger.info("Received start message from client")
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON parse error: {e}")
-        elif bytes_data:
-            try:
-                if self.deepgram_ws.open:
-                    await self.deepgram_ws.send(bytes_data)
-            except Exception as e:
-                logger.error(f"Error sending audio to Deepgram: {e}")
-                await self.send_error("Error sending audio to Deepgram")
+    async def receive(self, text_data):
+        # Receive WebSocket message from frontend
+        data = json.loads(text_data)
+        if "url" in data:
+            # Start transcription with the provided URL
+            options = LiveOptions(
+                model="nova-3",
+                language="en-US",
+                smart_format=True,
+                encoding="linear16",
+                channels=1,
+                sample_rate=16000,
+                interim_results=True,
+                utterance_end_ms="1000",
+                vad_events=True,
+                endpointing=300,
+            )
+            addons = {"no_delay": "true"}
+            self.dg_connection.start(options, addons=addons, url=data["url"])
 
-    async def listen_to_deepgram(self):
-        try:
-            async for message in self.deepgram_ws:
-                try:
-                    response = json.loads(message)
-                    if "channel" in response:
-                        channel_index = response.get("channel_index", [0])[0]
-                        channel = "customer" if channel_index == 0 else "assistant"
-                        text = response["channel"]["alternatives"][0].get("transcript", "").strip()
-                        if not text:
-                            continue
-                        logger.info(f"Transcript received [{channel}]: {text}")
-                        self.transcript_buffer[channel] += f" {text}"
-                        await self.send_transcription(text, channel)
-                except Exception as e:
-                    logger.error(f"Error parsing Deepgram message: {e}")
-        except asyncio.CancelledError:
-            logger.info("Deepgram listener task cancelled")
-        except Exception as e:
-            logger.error(f"Deepgram WebSocket error: {e}")
-            await self.send_error("Deepgram connection error")
+    def on_message(self, result, **kwargs):
+        # Handle transcription results
+        print("\n Result: ", result)
 
-    async def send_transcription(self, text, channel):
-        await self.send(text_data=json.dumps({
-            "type": "transcriber-response",
-            "transcription": text,
-            "channel": channel,
-        }))
+        sentence = result.channel.alternatives[0].transcript
+        if result.is_final:
+            self.is_finals.append(sentence)
+            if result.speech_final:
+                utterance = " ".join(self.is_finals)
+                self.is_finals = []
+                # Send final transcription to frontend
+                self.send(text_data=json.dumps({"type": "final", "transcript": utterance}))
+        else:
+            # Send interim transcription to frontend
+            self.send(text_data=json.dumps({"type": "interim", "transcript": sentence}))
 
-    async def send_error(self, message):
-        await self.send(text_data=json.dumps({
-            "type": "error",
-            "error": message,
-        }))
+    def on_close(self, close, **kwargs):
+        # Handle WebSocket close
+        self.send(text_data=json.dumps({"type": "close", "message": "Connection closed"}))
+
+    def on_error(self, error, **kwargs):
+        # Handle errors
+        self.send(text_data=json.dumps({"type": "error", "message": str(error)}))

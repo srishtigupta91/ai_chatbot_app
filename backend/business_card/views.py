@@ -33,8 +33,8 @@ class BusinessCardOutput(BaseModel):
 def connect_client(service_name):
     s3_client = boto3.client(
         service_name,
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key,
+        aws_access_key_id=aws_access_key_id[0],
+        aws_secret_access_key=aws_secret_access_key[0],
         region_name=region_name
     )
     return s3_client
@@ -42,10 +42,26 @@ def connect_client(service_name):
 # Function to upload file to AWS S3 and get the URL
 def upload_file_to_s3(file_obj, bucket_name, file_name):
     s3_client = connect_client('s3')
+
     # Upload the file
     s3_client.upload_fileobj(file_obj, bucket_name, file_name)
+
+    # Ensure all components are strings
+    region_name = s3_client.meta.region_name
+    if not isinstance(region_name, str):
+        region_name = str(region_name)
+    if not isinstance(bucket_name, str):
+        bucket_name = str(bucket_name)
+    if not isinstance(file_name, str):
+        file_name = str(file_name)
+
     # Generate the file URL
-    file_url = f"https://{bucket_name}.s3.{s3_client.meta.region_name}.amazonaws.com/{file_name}"
+    try:
+        file_url = f"https://{bucket_name}.s3.{region_name}.amazonaws.com/{file_name}"
+    except TypeError as e:
+        raise TypeError(
+            f"Error constructing file URL: {e}. Variables - bucket_name: {bucket_name}, region_name: {region_name}, file_name: {file_name}")
+
     return file_url
 
 # Function to extract text from an image using AWS Textract

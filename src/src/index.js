@@ -1,12 +1,17 @@
-// filepath: c:\Users\srish\Applications\ai-chatbot-app\src\index.js
 import React from 'react';
-import ReactDOM from 'react-dom';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App';
+import ReactDOM from 'react-dom/client'; // Import createRoot from react-dom/client
+import { BrowserRouter } from 'react-router-dom'; // Import BrowserRouter
+import App from './App'; // Your main App component
 
-ReactDOM.render(
-    <BrowserRouter>
-        <App />
-    </BrowserRouter>,
-    document.getElementById('root')
+// Get the root DOM element
+const rootElement = document.getElementById('root');
+
+// Create a root and render the App component
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <BrowserRouter> {/* Wrap App with BrowserRouter */}
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );

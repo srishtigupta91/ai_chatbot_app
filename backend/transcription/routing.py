@@ -1,8 +1,6 @@
-# transcriber/routing.py
-
 from django.urls import re_path
-from . import consumers
+from transcription.consumers import DeepgramWebSocket
 
 websocket_urlpatterns = [
-    re_path(r"ws/transcriber/$", consumers.TranscriberConsumer.as_asgi()),
+    re_path(r'^ws/transcriber/$', DeepgramWebSocket.as_asgi()),
 ]
