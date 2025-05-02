@@ -20,48 +20,53 @@ const CompanyDetails = () => {
     setIsCalling(true);
 
     const assistantOptions = {
-      name: "ABC Rooster",
-      firstMessage: "ABC Rooster speaking, how can I help you?",
-      transcriber: {
-        provider: "deepgram",
-        model: "nova-2",
-        language: "en-US",
-      },
+      name: "jamie",
+      firstMessage: "Hello, I am  Jamie from ABC Rooster, how can I help you?",
       voice: {
-        provider: "playht",
-        voiceId: "jennifer",
+        provider: "vapi",
+        voiceId: "Elliot",
       },
       model: {
+        model: "gpt-4.1",
         provider: "openai",
-        model: "gpt-4",
+        temperature: 0.2,
         messages: [
           {
             role: "system",
-            content: `You are Jane, a friendly and professional AI assistant representing ${company.display_name} at the ${
-              Array.isArray(company.event_name) ? company.event_name.join(', ') : 'Unknown Event'
-            } trade show.
-Your human colleagues are currently assisting other visitors. Your primary goal is to warmly welcome visitors to the booth,
-introduce yourself, and understand their initial reason for visiting. Keep your interaction concise and engaging.
-
-Current conversation stage: GREETING
-
-Your tasks:
-1. Greet the visitor warmly: "Hey there! Welcome to ${company.display_name}!"
-2. Introduce yourself: "I'm Jane, your AI assistant here at the booth."
-3. Explain colleague availability: "Our team is currently engaged, but I'd love to assist you."
-4. Ask their reason for visiting the event: "What brings you to ${
-            Array.isArray(company.event_name) ? company.event_name.join(', ') : 'this event'
-          } today?"
-
-Company Background (for context, do not recite):
-${company.company_info || 'No company info available'}`,
-          },
-        ],
+            content: `You are a helpful assistant. Your name is Jamie. You are a voice assistant for a trade show lead management system. You will be speaking to a lead who is interested in the company's products and services. The company name is {{company_name}}, and the event name is {{event_name}}. The company information is as follows: {{company_info}}. The products available are: {{products_info}}. The lead information summary is: {{lead_info_summary}}. The product varieties available are: {{product_varieties_info}}. The lead's name is: {{lead_name}}. The lead's company ID is: {{lead_company}}. The lead's location is: {{lead_location}}.`,
+          }
+        ]
       },
     };
 
+    const assistantOverrides =  {
+      transcriber: {
+        provider: "openai",
+        model: "gpt-4o-transcribe",
+        language: "en",
+      },
+      recordingEnabled: false,
+      variableValues: {
+        company_name: company.display_name || "Unknown Company",
+        event_name: Array.isArray(company.event_name) && company.event_name.length > 0
+          ? company.event_name.join(", ")
+          : "Unknown Event",
+        company_info: company.company_info || "No company info available",
+        products_info: Array.isArray(company.product_info)
+          ? company.product_info.map((product) => product.product_varieties).join(", ")
+          : "No products available",
+        lead_info_summary: "No lead info yet.",
+        product_varieties_info: Array.isArray(company.product_ids)
+          ? company.product_ids.join(", ")
+          : "No product varieties available",
+        lead_name: " ",
+        lead_company: company.company_id || "Unknown Company ID",
+        lead_location: company.company_address || "Unknown Location",
+      }
+    };
+
     // Start the voice assistant
-    vapi.start(assistantOptions);
+    vapi.start(assistantOptions, assistantOverrides);
 
     // Log when speech starts
     vapi.on('speech-start', () => {
@@ -69,11 +74,37 @@ ${company.company_info || 'No company info available'}`,
     });
 
     vapi.on("message", (msg) => {
-        if (msg.type === "transcript") {
-          // Append the transcript message to the conversationTranscript array
-          conversationTranscript.push(msg);
+      if (msg.type === "transcript") {
+        console.log("Transcript message:", msg);
+    
+        // Check if the message is from the assistant
+        if (msg.role === "assistant" && msg.transcriptType === "final") {
+          console.log("Assistant's final response:", msg.transcript);
+    
+          // Append the assistant's response to the conversation transcript
+          conversationTranscript.push({
+            timestamp: new Date().toISOString(),
+            speaker: "Assistant",
+            text: msg.transcript,
+          });
         }
-      });
+    
+        // Check if the message is from the user
+        if (msg.role === "user" && msg.transcriptType === "final") {
+          console.log("User's final response:", msg.transcript);
+    
+          // Append the user's response to the conversation transcript
+          conversationTranscript.push({
+            timestamp: new Date().toISOString(),
+            speaker: "User",
+            text: msg.transcript,
+          });
+        }
+    
+        // Optionally, log the entire conversation transcript for debugging
+        console.log("Updated conversation transcript:", conversationTranscript);
+      }
+    });
 
     // Log when speech ends and reset inactivity timeout
     vapi.on('speech-end', () => {
@@ -81,12 +112,12 @@ ${company.company_info || 'No company info available'}`,
       resetInactivityTimeout();
     });
 
-    // Stop the call if no speech is detected for 30 seconds
-    resetInactivityTimeout();
     // Handle call end and export transcript
+    vapi.on('call-end', () => {
+      console.log('Call has ended');
+      exportTranscript();
+    });
   };
-
-
 
   const resetInactivityTimeout = () => {
     if (inactivityTimeoutRef.current) {
