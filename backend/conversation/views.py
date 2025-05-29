@@ -130,7 +130,7 @@ class ConversationView(views.APIView):
                 "company": company_id,
                 "role": user.role,
                 'location': '',
-                "conversation_timestamp": conversation.timestamp if conversation else None,
+                "conversation_timestamp": conversation.timestamp if conversation else datetime.now(),
             }
             # fetch the lead details to get the conversation history and update the messages
             lead = Lead.objects.filter(
@@ -231,7 +231,6 @@ class TranscribeAudioView(views.APIView):
 
     def post(self, request, *args, **kwargs):
         # Check if an audio file is provided
-        breakpoint()
         audio_file = request.FILES.get('file')
         if not audio_file:
             return response.Response({"error": "No audio file provided."}, status=status.HTTP_400_BAD_REQUEST)

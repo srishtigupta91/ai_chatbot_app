@@ -72,3 +72,12 @@
 .end-call-button:hover {
   background-color: #3b82f6;
 }
+
+.chat-container {
+  max-height: 400px; /* Set a maximum height for the chat container */
+  overflow-y: auto; /* Enable vertical scrolling */
+  border: 1px solid #241414; /* Optional: Add a border for better visibility */
+  padding: 10px; /* Add padding for spacing */
+  background-color: #0f0101; /* Optional: Set a background color */
+  border-radius: 5px; /* Optional: Add rounded corners */
+}

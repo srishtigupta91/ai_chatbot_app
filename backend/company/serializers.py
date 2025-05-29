@@ -19,13 +19,12 @@ class CompanySerializer(serializers.ModelSerializer):
     def fetch_current_event_name(self, obj):
         # Filter events for the company that are currently active
         current_time = datetime.now()
-        active_events = Event.objects.filter(
+        active_event = Event.objects.filter(
             company=obj,
-            start_date__lte=current_time,
             end_date__gte=current_time
-        )
+        ).last()
         # Return a list of event names
-        return [event.name for event in active_events]
+        return active_event.name
 
     def fetch_product_ids(self, obj):
         # Fetch all products related to the company

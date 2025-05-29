@@ -129,3 +129,19 @@
     font-size: 14px;
     color: #ffffff;
   }
+
+  .form-label {
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  .form-input {
+    margin-left: 10px;
+    padding: 5px;
+    width: 100%;
+  }
+  
+  .form-button {
+    margin-right: 10px;
+    padding: 10px 20px;
+  }
