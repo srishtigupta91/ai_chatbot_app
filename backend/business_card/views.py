@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import boto3
 import json
@@ -83,7 +84,7 @@ def extract_text_from_s3_image(bucket_name, file_name):
 def webhook_view(request):
 
     if request.method == "GET":
-        last_lead_info = Lead.objects.all().order_by('-created_at').last()
+        last_lead_info = Lead.objects.all().order_by('-created_at').first()
         name = last_lead_info.full_name
         email = last_lead_info.email
         phone = last_lead_info.phone
@@ -98,16 +99,21 @@ def webhook_view(request):
 
     if request.method == "POST":
         try:
-            payload = json.loads(request.body)
-            name = payload.get("full_name", "Unknown")
-            email = payload.get("email", "Unknown")
+            last_lead_info = Lead.objects.all().order_by('-created_at').first()
+            name = last_lead_info.full_name
+            email = last_lead_info.email
+            phone = last_lead_info.phone
+            lead_info = {
+                "email": email,
+                "phone": phone,
+                "full_name": name,
+                "lead_id": last_lead_info.id,
+                "address": last_lead_info.location
+            }
 
             return JsonResponse({
-                    "type": "say",
-                    "messages": [{
-                        "type": "text",
-                        "text": f"Thanks for uploading your business card. I found the following details: Name: {name}, Email: {email}. Is that correct?"
-                    }]
+              "type": "say",
+              "message": f"Thanks for uploading your business card. I found the following details: {lead_info}. Is that correct?"
             })
 
             # Process the webhook payload here
@@ -193,7 +199,10 @@ Extract only the information visible on the card. If a field is not present, omi
         # webhook_url = reverse("get_webhook_url")
         webhook_url = os.getenv('NGROK_API_URL') + os.getenv('VERIFY_CARD_INFO_API')
         try:
-            webhook_response = requests.post(webhook_url, json=details_dict)
+            webhook_response = requests.post(webhook_url, json={"type": "add-message", "message": {
+                "role": "user",
+                "message": f"Thanks for uploading your business card. I found the following details: {details_dict}. Is that correct?"
+            }})
             webhook_response.raise_for_status()
             print(webhook_response.json())
         except requests.exceptions.RequestException as e:

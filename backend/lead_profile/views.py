@@ -1,9 +1,17 @@
 from django.http import JsonResponse
 import json
 
-from rest_framework import views
+from rest_framework import views, viewsets
 
 from .models import Lead
+from .serializers import LeadSerializer
+
+
+class LeadViewSet(viewsets.ModelViewSet):
+
+    model = Lead
+    serializer_class = LeadSerializer
+    queryset = model.objects.all()
 
 class UpdateLeadWebhookView(views.APIView):
     def post(self, request, *args, **kwargs):

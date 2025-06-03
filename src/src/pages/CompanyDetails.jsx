@@ -6,7 +6,7 @@ import './CompanyDetails.css'; // Import the CSS file for styling
 
 const vapi = new Vapi('1b0458ab-2109-427f-86cb-3205bf62e457');
 
-let conversationTranscript = [];
+// let conversationTranscript = [];
 
 const CompanyDetails = () => {
   const location = useLocation();
@@ -24,12 +24,21 @@ const CompanyDetails = () => {
   const [events, setEvents] = useState([]); // State to store events fetched from the API
   const [leads, setLeads] = useState([]); // State to store leads fetched from the API
   const [conversationTranscript, setConversationTranscript] = useState([]);
-
-  // ...existing code...
-
-  // Voiceflow widget integration
+  const [leadObj, setLeadObj] = useState(null);
+  const [conversationHistory, setConversationHistory] = useState([]); // For Vapi messages
+  const [conversationStartTime, setConversationStartTime] = useState(null);
+  const [conversationEndTime, setConversationEndTime] = useState(null);
+  
+  // Initialize Vapi with the provided API key
   useEffect(() => {
-    setConversationTranscript([]);
+  if (!isCalling && conversationEndTime && conversationHistory.length > 0) {
+    saveConversationHistory();
+  }
+  // eslint-disable-next-line
+}, [isCalling, conversationEndTime]);
+
+  // // Voiceflow widget integration
+  useEffect(() => {
     // Prevent multiple script injections
     if (document.getElementById('voiceflow-widget')) return;
 
@@ -138,13 +147,13 @@ const CompanyDetails = () => {
     }
   };
 
-  const handlebusinesscardupload = () => {
-    // Function to log the user action
+  const handlebusinesscardupload = (leadData) => {
+    // Send the uploaded business card info to Vapi for verification
     vapi.send({
       type: "add-message",
       message: {
         role: "system",
-        content: "The user has pressed the button, say peanuts",
+        prompt: `The business card has been uploaded. Please verify the following details with the customer: ${JSON.stringify(leadData)}.`,
       },
     });
   };
@@ -153,6 +162,8 @@ const CompanyDetails = () => {
   const startVoiceCall = () => {
     console.log('Starting voice call...');
     setIsCalling(true);
+    setConversationHistory([]); // Reset history for new call
+    setConversationStartTime(new Date()); // Capture start time
 
     const assistantOptions = {
       name: "jamie",
@@ -168,30 +179,47 @@ const CompanyDetails = () => {
         messages: [
           {
             role: "system",
-            content: `You are a helpful assistant. Your name is Jamie. You are a voice assistant for a trade show lead management system. You will be speaking to a lead who is interested in the company's products and services. The company name is {{company_name}}, and the event name is {{event_name}}. The company information is as follows: {{company_info}}. The products available are: {{products_info}}. The lead information summary is: {{lead_info_summary}}. The product varieties available are: {{product_varieties_info}}. You need to ask the lead to upload their business card. Then you need to verify the business card information via the 'verify_business_card_details' function using the provided webhook URL. You will be speaking to the lead in English.`
+            content: `You are a helpful assistant. Your name is Jamie. You are a voice assistant for a trade show lead management system. You will be speaking to a lead who is interested in the company's products and services. The company name is {{company_name}}, and the event name is {{event_name}}. The company information is as follows: {{company_info}}. The products available are: {{products_info}}. The lead information summary is: {{lead_info_summary}}. The product varieties available are: {{product_varieties_info}}. You can ask customer for uploading the business card to fetch the information from the card using the api request \`business_card_details\`.  You can schedule a follow-up meeting with the lead using the \`scheduleMeeting\` function by asking for their preferred date and time and participants information by default participant email will be rini.srish@gmail.com. You will be speaking in English.`,
           }
+          
         ],
         tools: [{
-          "type": "mcp",
+          "type": "apiRequest",
           "function": {
-            "name": "verify_business_card_details",
-            "description": "You need to verify the uploaded business card information during the call. Once user uploaded the business card on the application. Webhook will retrieve the information and pass the details for the verification.",
+            "name": "api_request_tool",
             "parameters": {
               "type": "object",
               "properties": {},
               "required": []
             }
           },
-          "server": {
-            "url": "https://975f-2601-188-c100-8070-5d-2226-d26a-3cda.ngrok-free.app/business_card/verify_info/webhook/",
-            "headers": {}
+          "name": "business_card_details",
+          "url": "https://a440-2601-188-c100-8070-d5f2-2ee6-83a7-c93d.ngrok-free.app/business_card/verify_info/webhook/",
+          "method": "POST"
+        },
+        {
+          "type": "google.calendar.event.create",
+          "function": {
+            "name": "scheduleMeeting",
+            "description": "Schedule an appointment with customer for follow up with their queries. After providing all appointment details of customer such as meeting_datetime, meeting_location, participants, etc.\n\nNotes:\n- Use America/New_York as default Timezone.\n- All appointments are for 30 minutes.\n - Add rini.srish@gmail.com in all scheduled appointments by default.\n\n",
+            "parameters": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          },
+          "messages": [],
+          "metadata": {
+            "calendarId": "rini.srish@gmail.com",
+            "timeZone": "America/New_York"
           }
-        }],
+        }
+      ],
       }
     };
     // Set up the assistant overrides
 
-    const assistantOverrides =  {
+    const assistantOverrides = {
       transcriber: {
         provider: "openai",
         model: "gpt-4o-transcribe",
@@ -200,19 +228,22 @@ const CompanyDetails = () => {
       recordingEnabled: false,
       variableValues: {
         company_name: company.display_name || "Unknown Company",
+        email: company.email || "Unknown Email",
         event_name: company.event_name || "Unknown Event",
         company_id: company.id || "Unknown Company ID",
         company_info: company.company_info || "No company info available",
         products_info: Array.isArray(company.product_info)
           ? company.product_info.map((product) => product.product_varieties).join(", ")
           : "No products available",
-        lead_info_summary: "No lead info yet.",
+        lead_info_summary: leadObj
+          ? JSON.stringify(leadObj) // or format as needed
+          : "No lead info yet.",
         product_varieties_info: Array.isArray(company.product_ids)
           ? company.product_ids.join(", ")
           : "No product varieties available",
-        lead_name: " ",
-        lead_company: company.company_id || "Unknown Company ID",
-        lead_location: company.company_address || "Unknown Location",
+        lead_name: leadObj?.full_name || " ",
+        lead_company: leadObj?.company || company.company_id || "Unknown Company ID",
+        lead_location: leadObj?.location || company.company_address || "Unknown Location",
       }
     };
 
@@ -222,6 +253,7 @@ const CompanyDetails = () => {
     // Log when speech starts
     vapi.on('speech-start', () => {
       console.log('Speech has started');
+      if (!conversationStartTime) setConversationStartTime(new Date());
     });
 
     vapi.on("message", (msg) => {
@@ -261,6 +293,26 @@ const CompanyDetails = () => {
         // Optionally, log the entire conversation transcript for debugging
         console.log("Updated conversation transcript:", conversationTranscript);
       }
+      if (msg.type === "transcript" && msg.transcriptType === "final") {
+        // Save to transcript for UI
+        setConversationTranscript((prev) => [
+          ...prev,
+          {
+            timestamp: new Date().toISOString(),
+            speaker: msg.role === "assistant" ? "Agent" : "User",
+            text: msg.transcript,
+          },
+        ]);
+        // Save to conversationHistory for backend
+        setConversationHistory((prev) => [
+          ...prev,
+          {
+            role: msg.role === "assistant" ? "agent" : "user",
+            text: msg.transcript,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
     });
 
     // Log when speech ends and reset inactivity timeout
@@ -272,8 +324,46 @@ const CompanyDetails = () => {
     // Handle call end and export transcript
     vapi.on('call-end', () => {
       console.log('Call has ended');
+      setConversationEndTime(new Date()); // Capture end time
+      saveConversationHistory();
       exportTranscript();
+      setIsCalling(false);
     });
+  };
+
+  // Save conversation history to backend
+  const saveConversationHistory = async () => {
+    if (!conversationHistory.length) return;
+
+    // Prepare messages as {user: "...", agent: "..."} arrays
+    const messages = {};
+    conversationHistory.forEach((msg, idx) => {
+      if (!messages[msg.role]) messages[msg.role] = [];
+      messages[msg.role].push(msg.text);
+    });
+
+    const leadId = followUpDetails.participants || (leads[0]?.id ?? null);
+
+    const payload = {
+      lead: leadId,
+      summary: "Conversation summary", // You can generate or update this as needed
+      messages,
+      session_id: localStorage.getItem('session_id') || '',
+      start_time: conversationStartTime ? conversationStartTime.toISOString() : null,
+      end_time: conversationEndTime ? conversationEndTime.toISOString() : new Date().toISOString(),
+      tags: [],
+    };
+
+    try {
+      await fetch('http://localhost:8000/conversation/save-chat/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      // Optionally alert or handle success
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
   };
 
   const resetInactivityTimeout = () => {
@@ -282,9 +372,9 @@ const CompanyDetails = () => {
     }
 
     inactivityTimeoutRef.current = setTimeout(() => {
-      console.log('No speech detected for 30 seconds. Stopping the call...');
+      console.log('No speech detected for 50 seconds. Stopping the call...');
       stopVoiceCall();
-    }, 30000); // 30 seconds
+    }, 50000); // 50 seconds
   };
 
   const stopVoiceCall = () => {
@@ -320,15 +410,15 @@ const CompanyDetails = () => {
     .replace('{lead_location}', company.company_address || 'Unknown Location');
 
   const uploadBusinessCard = async (event) => {
-    const fileInput = event.target; // Reference to the file input element
-    const file = fileInput.files[0]; // Get the selected file
+    const fileInput = event.target;
+    const file = fileInput.files[0];
 
     if (!file) {
       alert('Please select a file to upload.');
       return;
     }
 
-    const userId = localStorage.getItem('user_id'); // Retrieve user_id from localStorage
+    const userId = localStorage.getItem('user_id');
     if (!userId) {
       alert('User ID not found. Please log in again.');
       return;
@@ -347,7 +437,10 @@ const CompanyDetails = () => {
       });
 
       if (response.ok) {
+        const data = await response.json(); // <-- Capture the API response
+        setLeadObj(data); // <-- Save the lead object
         alert('Business card uploaded successfully!');
+        handlebusinesscardupload(data);
       } else {
         console.error('Failed to upload business card:', response.statusText);
         alert('Failed to upload business card. Please try again.');
@@ -357,7 +450,7 @@ const CompanyDetails = () => {
       alert('An error occurred while uploading the business card.');
     } finally {
       setUploading(false);
-      fileInput.value = ''; // Reset the file input value to allow re-selection of the same file
+      fileInput.value = '';
     }
   };
 
@@ -403,7 +496,6 @@ const CompanyDetails = () => {
               type="file"
               accept="image/*"
               onChange={uploadBusinessCard}
-              onClick={handlebusinesscardupload}
               style={{ display: 'none' }}
             />
           </label>
@@ -497,7 +589,7 @@ const CompanyDetails = () => {
                 ? conversationTranscript.map((msg) => `${msg.speaker}: ${msg.text}`).join('\n')
                 : formattedGreeting
             }
-            conversationTranscript={conversationTranscript} // Pass the transcript as a prop
+            conversationTranscript={conversationTranscript}
           />
         </div>
 
@@ -516,6 +608,17 @@ const CompanyDetails = () => {
                 ))}
             </ul>
           </div>
+
+          {leadObj && (
+            <div className="overview-card" style={{ marginTop: '20px', background: '#1e293b' }}>
+              <h3>Lead Details</h3>
+              {Object.entries(leadObj).map(([key, value]) => (
+                <p key={key}>
+                  <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {String(value)}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
