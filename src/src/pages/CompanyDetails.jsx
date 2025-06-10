@@ -106,6 +106,95 @@ const CompanyDetails = () => {
     fetchLeads();
   }, []);
 
+  // Add this function inside your CompanyDetails component
+
+  const scanBusinessCardWithCamera = async () => {
+    // Create a video element to show the camera stream
+    const video = document.createElement('video');
+    video.style.display = 'none';
+    document.body.appendChild(video);
+
+    try {
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      await video.play();
+
+      // Create a modal or prompt for the user to capture
+      alert('Position your business card in front of the camera and click OK to capture.');
+
+      // Create a canvas to capture the frame
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Stop the camera
+      stream.getTracks().forEach(track => track.stop());
+      document.body.removeChild(video);
+
+      // Convert canvas to blob (JPEG)
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert('Failed to capture image.');
+          return;
+        }
+
+        // Prepare form data
+        const userId = localStorage.getItem('user_id');
+        if (!userId) {
+          alert('User ID not found. Please log in again.');
+          return;
+        }
+        const formData = new FormData();
+        formData.append('file', blob, 'business_card.jpg');
+        formData.append('user_id', userId);
+        formData.append('company_id', company.company_id);
+
+        try {
+          setUploading(true);
+          const response = await fetch('http://localhost:8000/business_card/upload/', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setLeadObj(data);
+            alert('Business card scanned and details extracted!');
+            setConversationTranscript((prev) => [
+              ...prev,
+              {
+                timestamp: new Date().toISOString(),
+                speaker: "User",
+                text: "Business card has been scanned and details extracted.",
+              },
+            ]);
+            setConversationHistory((prev) => [
+              ...prev,
+              {
+                role: "user",
+                text: "Business card has been scanned and details extracted.",
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+          } else {
+            alert('Failed to scan business card. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error during scan:', error);
+          alert('An error occurred while scanning the business card.');
+        } finally {
+          setUploading(false);
+        }
+      }, 'image/jpeg', 0.95);
+
+    } catch (error) {
+      alert('Could not access the camera.');
+      if (video.parentNode) document.body.removeChild(video);
+    }
+  };
 
   const handleFollowUpChange = (e) => {
     const { name, value } = e.target;
@@ -194,7 +283,7 @@ const CompanyDetails = () => {
             }
           },
           "name": "business_card_details",
-          "url": "https://a440-2601-188-c100-8070-d5f2-2ee6-83a7-c93d.ngrok-free.app/business_card/verify_info/webhook/",
+          "url": "https://7ba2-2601-188-c100-8070-682c-5c68-22e9-55c6.ngrok-free.app/business_card/verify_info/webhook/",
           "method": "POST"
         },
         {
@@ -233,7 +322,7 @@ const CompanyDetails = () => {
         company_id: company.id || "Unknown Company ID",
         company_info: company.company_info || "No company info available",
         products_info: Array.isArray(company.product_info)
-          ? company.product_info.map((product) => product.product_varieties).join(", ")
+          ? company.product_info.map((product) => product.product_info).join(", ")
           : "No products available",
         lead_info_summary: leadObj
           ? JSON.stringify(leadObj) // or format as needed
@@ -437,14 +526,30 @@ const CompanyDetails = () => {
       });
 
       if (response.ok) {
-        const data = await response.json(); // <-- Capture the API response
-        setLeadObj(data); // <-- Save the lead object
+        const data = await response.json();
+        setLeadObj(data);
         alert('Business card uploaded successfully!');
+
+        // Notify agent in chat UI and history
+        setConversationTranscript((prev) => [
+          ...prev,
+          {
+            timestamp: new Date().toISOString(),
+            speaker: "User",
+            text: "Business card has been uploaded.",
+          },
+        ]);
+        setConversationHistory((prev) => [
+          ...prev,
+          {
+            role: "user",
+            text: "Business card has been uploaded.",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+
         handlebusinesscardupload(data);
-      } else {
-        console.error('Failed to upload business card:', response.statusText);
-        alert('Failed to upload business card. Please try again.');
-      }
+      } 
     } catch (error) {
       console.error('Error during upload:', error);
       alert('An error occurred while uploading the business card.');
@@ -498,6 +603,12 @@ const CompanyDetails = () => {
               onChange={uploadBusinessCard}
               style={{ display: 'none' }}
             />
+          </label>
+          <label className="feature-button">
+            Scan Business Card
+            <button className="feature-button" onClick={scanBusinessCardWithCamera}>
+              Scan Business Card
+            </button>
           </label>
           <button className="feature-button">Export Transcript</button>
           <button

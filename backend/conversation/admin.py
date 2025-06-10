@@ -12,7 +12,7 @@ class ConversationAdmin(admin.ModelAdmin):
 
 @admin.register(ConversationHistory)
 class ConversationHistoryAdmin(admin.ModelAdmin):
-    list_display = ('lead', 'summary', )
+    list_display = ('lead', 'summary', 'session_id')
 
 @admin.register(PDFDocument)
 class PDFDocumentAdmin(admin.ModelAdmin):

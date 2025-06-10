@@ -20,7 +20,6 @@ class CompanySerializer(serializers.ModelSerializer):
         # Filter events for the company that are currently active
         current_time = datetime.now()
         active_event = Event.objects.filter(
-            company=obj,
             end_date__gte=current_time
         ).last()
         # Return a list of event names

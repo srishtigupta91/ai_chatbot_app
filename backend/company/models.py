@@ -12,3 +12,4 @@ class Company(models.Model):
     optional_fields = models.JSONField(default=list, null=True, blank=True)
     conversation_goal = models.TextField(null=True, blank=True)
     initial_greeting_prompt = models.TextField(null=True, blank=True)
+    conversation_prompt = models.TextField(null=True, blank=True)

@@ -6,7 +6,7 @@ class Event(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     is_currently_active = models.BooleanField(null=True, blank=True)
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, related_name='events')
+    company = models.ManyToManyField('company.Company', related_name='events')  # Changed to ManyToManyField
 
     def __str__(self):
         return self.name
