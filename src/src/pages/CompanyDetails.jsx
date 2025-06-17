@@ -106,8 +106,19 @@ const CompanyDetails = () => {
     fetchLeads();
   }, []);
 
-  // Add this function inside your CompanyDetails component
+  // Generate a unique UUID for each business card upload
+  const generateUUID = () => {
+    if (window.crypto && window.crypto.randomUUID) {
+      return window.crypto.randomUUID();
+    }
+    // Fallback for older browsers
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+  };
 
+  // Add this function inside your CompanyDetails component
+  const uuid = generateUUID();
   const scanBusinessCardWithCamera = async () => {
     // Create a video element to show the camera stream
     const video = document.createElement('video');
@@ -148,7 +159,7 @@ const CompanyDetails = () => {
           return;
         }
         const formData = new FormData();
-        formData.append('file', blob, 'business_card.jpg');
+        formData.append('file', blob, `business_card_${userId}_${uuid}.jpg`);
         formData.append('user_id', userId);
         formData.append('company_id', company.company_id);
 
@@ -268,7 +279,7 @@ const CompanyDetails = () => {
         messages: [
           {
             role: "system",
-            content: `You are a helpful assistant. Your name is Jamie. You are a voice assistant for a trade show lead management system. You will be speaking to a lead who is interested in the company's products and services. The company name is {{company_name}}, and the event name is {{event_name}}. The company information is as follows: {{company_info}}. The products available are: {{products_info}}. The lead information summary is: {{lead_info_summary}}. The product varieties available are: {{product_varieties_info}}. You can ask customer for uploading the business card to fetch the information from the card using the api request \`business_card_details\`.  You can schedule a follow-up meeting with the lead using the \`scheduleMeeting\` function by asking for their preferred date and time and participants information by default participant email will be rini.srish@gmail.com. You will be speaking in English.`,
+            content: `{{conversation_prompt}}`,
           }
           
         ],
@@ -316,6 +327,8 @@ const CompanyDetails = () => {
       },
       recordingEnabled: false,
       variableValues: {
+        initial_greet: company.initial_greeting_prompt || "No initial greeting available",
+        conversation_prompt: company.conversation_prompt || "No conversation prompt available",
         company_name: company.display_name || "Unknown Company",
         email: company.email || "Unknown Email",
         event_name: company.event_name || "Unknown Event",
@@ -342,11 +355,13 @@ const CompanyDetails = () => {
     // Log when speech starts
     vapi.on('speech-start', () => {
       console.log('Speech has started');
+      resetInactivityTimeout();
       if (!conversationStartTime) setConversationStartTime(new Date());
     });
 
     vapi.on("message", (msg) => {
       if (msg.type === "transcript") {
+        resetInactivityTimeout(); 
         console.log("Transcript message:", msg);
 
         // Check if the message is from the assistant
@@ -593,7 +608,7 @@ const CompanyDetails = () => {
             className="feature-button"
             onClick={() => (isCalling ? stopVoiceCall() : startVoiceCall())}
           >
-            {isCalling ? 'End Call' : 'Speak to Vanya'}
+            {isCalling ? 'End Call' : 'Speak to Agent'}
           </button>
           <label className="feature-button">
             Upload Business Card
@@ -605,12 +620,10 @@ const CompanyDetails = () => {
             />
           </label>
           <label className="feature-button">
-            Scan Business Card
+            Scan Business Card with Camera
             <button className="feature-button" onClick={scanBusinessCardWithCamera}>
-              Scan Business Card
             </button>
           </label>
-          <button className="feature-button">Export Transcript</button>
           <button
             className="feature-button"
             onClick={() => setShowFollowUpForm((prevState) => !prevState)}

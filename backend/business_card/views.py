@@ -136,7 +136,7 @@ class ExtractBusinessCardDetailsView(APIView):
         # Load the image
         image = request.FILES['file']
         file_name = image.name
-        bucket_name = 'ai-engagement-app-bucket'
+        bucket_name = 'ai-engagement-app-bucket-1'
 
         # Upload the image to S3 and get the URL
         try:

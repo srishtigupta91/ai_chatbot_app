@@ -5,6 +5,8 @@ from django.db import models
 class Company(models.Model):
     company_id = models.CharField(max_length=100, unique=True)
     company_address = models.TextField()
+    founder = models.CharField(max_length=100, null=True, blank=True)
+    tagline = models.CharField(max_length=100, null=True, blank=True)
     display_name = models.CharField(max_length=100)
     company_info = models.TextField()
     company_type = models.CharField(max_length=50)
