@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LoginUser.css'; // Import the CSS file for styling
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 const LoginUser = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -9,7 +11,7 @@ const LoginUser = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://localhost:8000/accounts/login/', {
+      const response = await fetch(`${BACKEND_URL}/accounts/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

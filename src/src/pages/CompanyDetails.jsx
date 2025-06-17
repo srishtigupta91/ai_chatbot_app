@@ -4,6 +4,9 @@ import Vapi from '@vapi-ai/web';
 import VendorDashboard from './VendorDashboard'; // Import the chat functionality
 import './CompanyDetails.css'; // Import the CSS file for styling
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const NGROK_URL = process.env.REACT_APP_NGROK_URL;
+
 const vapi = new Vapi('1b0458ab-2109-427f-86cb-3205bf62e457');
 
 // let conversationTranscript = [];
@@ -72,7 +75,7 @@ const CompanyDetails = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('http://localhost:8000/events/');
+        const response = await fetch(`${BACKEND_URL}/events/`);
         if (response.ok) {
           const data = await response.json();
           setEvents(data); // Set the fetched events
@@ -91,7 +94,7 @@ const CompanyDetails = () => {
    useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const response = await fetch('http://localhost:8000/lead/');
+        const response = await fetch(`${BACKEND_URL}/lead/`);
         if (response.ok) {
           const data = await response.json();
           setLeads(data); // Set the fetched leads
@@ -165,7 +168,7 @@ const CompanyDetails = () => {
 
         try {
           setUploading(true);
-          const response = await fetch('http://localhost:8000/business_card/upload/', {
+          const response = await fetch(`${BACKEND_URL}/business_card/upload/`, {
             method: 'POST',
             body: formData,
           });
@@ -226,7 +229,7 @@ const CompanyDetails = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:8000/events/schedule-meeting/', {
+      const response = await fetch(`${BACKEND_URL}/events/schedule-meeting/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -294,7 +297,7 @@ const CompanyDetails = () => {
             }
           },
           "name": "business_card_details",
-          "url": "https://7ba2-2601-188-c100-8070-682c-5c68-22e9-55c6.ngrok-free.app/business_card/verify_info/webhook/",
+          "url": `${NGROK_URL}/business_card/verify_info/webhook/`,
           "method": "POST"
         },
         {
@@ -459,7 +462,7 @@ const CompanyDetails = () => {
     };
 
     try {
-      await fetch('http://localhost:8000/conversation/save-chat/', {
+      await fetch(`${BACKEND_URL}/conversation/save-chat/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -535,7 +538,7 @@ const CompanyDetails = () => {
 
     try {
       setUploading(true);
-      const response = await fetch('http://localhost:8000/business_card/upload/', {
+      const response = await fetch(`${BACKEND_URL}/business_card/upload/`, {
         method: 'POST',
         body: formData,
       });

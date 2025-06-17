@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './VendorDashboard.css'; // Import the CSS file
 
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const NGROK_URL = process.env.REACT_APP_NGROK_URL;
+
 const VendorDashboard = ({ companyId, initialGreeting, conversationTranscript }) => {
   const [messages, setMessages] = useState([]); // Chat messages
   const [input, setInput] = useState(''); // User input
@@ -62,7 +66,7 @@ const VendorDashboard = ({ companyId, initialGreeting, conversationTranscript })
     formData.append('session_id', sessionId); // Add session_id to the payload
 
     try {
-      const response = await fetch('http://localhost:8000/conversation/chat/', {
+      const response = await fetch(`${BACKEND_URL}/conversation/chat/`, {
         method: 'POST',
         body: formData,
       });
