@@ -41,35 +41,35 @@ const CompanyDetails = () => {
 }, [isCalling, conversationEndTime]);
 
   // // Voiceflow widget integration
-  useEffect(() => {
-    // Prevent multiple script injections
-    if (document.getElementById('voiceflow-widget')) return;
+  // useEffect(() => {
+  //   // Prevent multiple script injections
+  //   if (document.getElementById('voiceflow-widget')) return;
 
-    const script = document.createElement('script');
-    script.id = 'voiceflow-widget';
-    script.type = 'text/javascript';
-    script.src = 'https://cdn.voiceflow.com/widget-next/bundle.mjs';
-    script.onload = function () {
-      if (window.voiceflow && window.voiceflow.chat) {
-        window.voiceflow.chat.load({
-          verify: { projectID: '6835f0e500c7424ccd26e1e6' },
-          url: 'https://general-runtime.voiceflow.com',
-          versionID: 'development',
-          voice: {
-            url: "https://runtime-api.voiceflow.com"
-          }
-        });
-      }
-    };
-    document.body.appendChild(script);
+  //   const script = document.createElement('script');
+  //   script.id = 'voiceflow-widget';
+  //   script.type = 'text/javascript';
+  //   script.src = 'https://cdn.voiceflow.com/widget-next/bundle.mjs';
+  //   script.onload = function () {
+  //     if (window.voiceflow && window.voiceflow.chat) {
+  //       window.voiceflow.chat.load({
+  //         verify: { projectID: '6835f0e500c7424ccd26e1e6' },
+  //         url: 'https://general-runtime.voiceflow.com',
+  //         versionID: 'development',
+  //         voice: {
+  //           url: "https://runtime-api.voiceflow.com"
+  //         }
+  //       });
+  //     }
+  //   };
+  //   document.body.appendChild(script);
 
-    // Optional: Cleanup script on unmount
-    return () => {
-      document.getElementById('voiceflow-widget')?.remove();
-      // Remove widget container if needed
-      document.getElementById('vf-chat-widget-container')?.remove();
-    };
-  }, []);
+  //   // Optional: Cleanup script on unmount
+  //   return () => {
+  //     document.getElementById('voiceflow-widget')?.remove();
+  //     // Remove widget container if needed
+  //     document.getElementById('vf-chat-widget-container')?.remove();
+  //   };
+  // }, []);
 
   // Fetch events from the API
   useEffect(() => {
