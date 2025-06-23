@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate for naviga
 import axios from 'axios';
 import './UserDashboard.css';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+
 const UserDashboard = () => {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +16,7 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/companies/'); // Replace with your actual API endpoint
+        const response = await axios.get(`${BACKEND_URL}/companies/`);
         setCompanies(response.data);
         setLoading(false);
       } catch (err) {
@@ -28,7 +31,7 @@ const UserDashboard = () => {
   const handleCompanyDoubleClick = async (company) => {
     try {
       // Fetch session_id and company details from the company-specific API
-      const response = await axios.get(`http://localhost:8000/companies/${company.id}/`);
+      const response = await axios.get(`${BACKEND_URL}/companies/${company.id}/`);
       const { session_id, data } = response.data;
 
       if (session_id) {

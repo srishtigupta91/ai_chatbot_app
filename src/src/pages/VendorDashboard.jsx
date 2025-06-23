@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './VendorDashboard.css'; // Import the CSS file
 
-const VendorDashboard = ({ companyId, initialGreeting }) => {
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const NGROK_URL = process.env.REACT_APP_NGROK_URL;
+
+const VendorDashboard = ({ companyId, initialGreeting, conversationTranscript }) => {
   const [messages, setMessages] = useState([]); // Chat messages
   const [input, setInput] = useState(''); // User input
 
@@ -11,6 +15,30 @@ const VendorDashboard = ({ companyId, initialGreeting }) => {
       setMessages([{ sender: 'agent', text: initialGreeting }]);
     }
   }, [initialGreeting]);
+
+  // Update the chat messages when the conversationTranscript changes
+  useEffect(() => {
+    if (conversationTranscript.length > 0) {
+      const latestMessage = conversationTranscript[conversationTranscript.length - 1];
+
+      // Avoid adding duplicate messages
+      setMessages((prevMessages) => {
+        if (
+          prevMessages.length > 0 &&
+          prevMessages[prevMessages.length - 1].text === latestMessage.text
+        ) {
+          return prevMessages; // Do not add duplicate messages
+        }
+        return [
+          ...prevMessages,
+          {
+            sender: latestMessage.speaker.toLowerCase(),
+            text: latestMessage.text,
+          },
+        ];
+      });
+    }
+  }, [conversationTranscript]);
 
   const handleSendMessage = async () => {
     if (!input.trim()) {
@@ -38,7 +66,7 @@ const VendorDashboard = ({ companyId, initialGreeting }) => {
     formData.append('session_id', sessionId); // Add session_id to the payload
 
     try {
-      const response = await fetch('http://localhost:8000/conversation/chat/', {
+      const response = await fetch(`${BACKEND_URL}/conversation/chat/`, {
         method: 'POST',
         body: formData,
       });
@@ -65,6 +93,7 @@ const VendorDashboard = ({ companyId, initialGreeting }) => {
   return (
     <div className="vendor-dashboard">
       <div className="chat-container">
+        <h3>Chat History</h3>
         {messages.map((message, index) => (
           <div key={index} className={`chat-message ${message.sender}`}>
             <strong>{message.sender === 'user' ? 'You' : 'Agent'}:</strong> {message.text}

@@ -3,7 +3,7 @@
     flex-direction: column;
     height: 100vh;
     background-color: #1e293b;
-    color: #ffffff;
+    color: #f8f3f3;
     font-family: Arial, sans-serif;
   }
   
@@ -128,4 +128,20 @@
     margin-top: 10px;
     font-size: 14px;
     color: #ffffff;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  .form-input {
+    margin-left: 10px;
+    padding: 5px;
+    width: 100%;
+  }
+  
+  .form-button {
+    margin-right: 10px;
+    padding: 10px 20px;
   }

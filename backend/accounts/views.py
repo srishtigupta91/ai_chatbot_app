@@ -17,6 +17,7 @@ from .serializers import UserSerializer
 load_dotenv()
 
 openai_acess_key = os.getenv('OPENAI_API_KEY')
+api_url = os.getenv('NGROK_API_URL')
 
 # Set the OpenAI API key
 client = OpenAI(api_key=openai_acess_key)
@@ -65,3 +66,20 @@ class LogoutView(views.APIView):
             token.delete()
             return response.Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
         return response.Response({"error": "Invalid token or user not logged in."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AllAPIsList(views.APIView):
+    def get(self, request, *args, **kwargs):
+        verification_url = api_url + os.getenv('VERIFY_CARD_INFO_API')
+        products_list = api_url + os.getenv('BUSINESS_PRODUCT_LIST')
+        get_product = api_url + os.getenv('GET_PRODUCT_API')
+        upload_business_card = api_url + os.getenv('UPLOAD_BUSINESS_CARD_API')
+        schedule_meeting_api = api_url + os.getenv('SCHEDULE_MEETING_URL')
+        apis = {
+            "verification_url": verification_url,
+            "products_list": products_list,
+            "get_product": get_product,
+            "upload_business_card": upload_business_card,
+            "schedule_meeting_api": schedule_meeting_api
+        }
+        return response.Response(apis, status=status.HTTP_200_OK)

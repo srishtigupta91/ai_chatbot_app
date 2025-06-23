@@ -1,8 +1,13 @@
 import os
+from datetime import datetime
 
 import boto3
 import json
 
+import requests
+from django.http import JsonResponse
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel
@@ -73,6 +78,49 @@ def extract_text_from_s3_image(bucket_name, file_name):
     extracted_text = " ".join([item['Text'] for item in response['Blocks'] if item['BlockType'] == 'LINE'])
     return extracted_text
 
+# Webhook URL for verifying the extracted information and pass it to agent
+# File: business_card/views.py
+@csrf_exempt
+def webhook_view(request):
+
+    if request.method == "GET":
+        last_lead_info = Lead.objects.all().order_by('-created_at').first()
+        name = last_lead_info.full_name
+        email = last_lead_info.email
+        phone = last_lead_info.phone
+        lead_info = {
+            "email": email,
+            "phone": phone,
+            "full_name": name,
+            "lead_id": last_lead_info.id,
+            "address": last_lead_info.location
+        }
+        return JsonResponse(lead_info)
+
+    if request.method == "POST":
+        try:
+            last_lead_info = Lead.objects.all().order_by('-created_at').first()
+            name = last_lead_info.full_name
+            email = last_lead_info.email
+            phone = last_lead_info.phone
+            lead_info = {
+                "email": email,
+                "phone": phone,
+                "full_name": name,
+                "lead_id": last_lead_info.id,
+                "address": last_lead_info.location
+            }
+
+            return JsonResponse({
+              "type": "say",
+              "message": f"Thanks for uploading your business card. I found the following details: {lead_info}. Is that correct?"
+            })
+
+            # Process the webhook payload here
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON payload"}, status=400)
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
 # API View to handle business card scanning
 class ExtractBusinessCardDetailsView(APIView):
     def __init__(self, **kwargs):
@@ -88,7 +136,7 @@ class ExtractBusinessCardDetailsView(APIView):
         # Load the image
         image = request.FILES['file']
         file_name = image.name
-        bucket_name = 'ai-engagement-app-bucket'
+        bucket_name = 'ai-engagement-app-bucket-1'
 
         # Upload the image to S3 and get the URL
         try:
@@ -145,6 +193,21 @@ Extract only the information visible on the card. If a field is not present, omi
         lead = Lead.objects.create(
             **details_dict
         )
+
+        details_dict['lead_id'] = lead.id
+        # Webhook URL
+        # webhook_url = reverse("get_webhook_url")
+        webhook_url = os.getenv('NGROK_API_URL') + os.getenv('VERIFY_CARD_INFO_API')
+        try:
+            webhook_response = requests.post(webhook_url, json={"type": "add-message", "message": {
+                "role": "user",
+                "message": f"Thanks for uploading your business card. I found the following details: {details_dict}. Is that correct?"
+            }})
+            webhook_response.raise_for_status()
+            print(webhook_response.json())
+        except requests.exceptions.RequestException as e:
+            return Response({"error": f"Failed to call webhook: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Return the extracted details
         return Response(details_dict, status=status.HTTP_200_OK)

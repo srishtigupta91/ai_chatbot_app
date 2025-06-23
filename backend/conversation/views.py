@@ -15,7 +15,7 @@ from company.models import Company
 from products.models import Products
 from .models import Conversation, PDFDocument, ConversationHistory
 from .prompts import get_prompt, PROMPTS
-from .serializers import PDFDocumentSerializer
+from .serializers import PDFDocumentSerializer, ConversationHistorySerializer
 from .utils import client, generate_summary
 from lead_profile.models import Lead
 
@@ -130,7 +130,7 @@ class ConversationView(views.APIView):
                 "company": company_id,
                 "role": user.role,
                 'location': '',
-                "conversation_timestamp": conversation.timestamp if conversation else None,
+                "conversation_timestamp": conversation.timestamp if conversation else datetime.now(),
             }
             # fetch the lead details to get the conversation history and update the messages
             lead = Lead.objects.filter(
@@ -225,37 +225,13 @@ class ConversationView(views.APIView):
             return response.Response({'error': f'Unexpected error: {str(e)}'},
                                      status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class ConversationHistoryView(viewsets.ModelViewSet):
+    '''create an api to fetch the complete conversation with agent and
+    save the information in comversationHistory model'''
+    model = ConversationHistory
+    serializer_class = ConversationHistorySerializer
+    queryset = model.objects.all()
 
-class TranscribeAudioView(views.APIView):
-    parser_classes = (MultiPartParser, FormParser)
-
-    def post(self, request, *args, **kwargs):
-        # Check if an audio file is provided
-        breakpoint()
-        audio_file = request.FILES.get('file')
-        if not audio_file:
-            return response.Response({"error": "No audio file provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Define the Deepgram API endpoint and headers
-        url = "https://api.deepgram.com/v1/listen"
-        headers = {
-            "Authorization": f"Token {os.getenv('DEEPGRAM_API_KEY')}",
-            "Content-Type": "audio/*"
-        }
-
-        try:
-            # Send the audio file to the Deepgram API
-            result = requests.post(url, headers=headers, data=audio_file)
-            response_data = result.json()
-
-            # Check for errors in the Deepgram API response
-            if result.status_code != 200:
-                return response.Response({"error": response_data.get("error", "Failed to transcribe audio.")},
-                                status=result.status_code)
-
-            # Return the transcription result
-            return response.Response(response_data, status=status.HTTP_200_OK)
-
-        except requests.RequestException as e:
-            return response.Response({"error": f"Request to Deepgram API failed: {str(e)}"},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def perform_create(self, serializer):
+        """save the conversation History of user and agent"""
+        serializer.save()
