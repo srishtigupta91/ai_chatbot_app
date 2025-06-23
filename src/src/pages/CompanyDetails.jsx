@@ -168,7 +168,7 @@ const CompanyDetails = () => {
 
         try {
           setUploading(true);
-          const response = await fetch(`${BACKEND_URL}/business_card/upload/`, {
+          const response = await fetch(`${BACKEND_URL}business_card/upload/`, {
             method: 'POST',
             body: formData,
           });
@@ -738,7 +738,7 @@ const CompanyDetails = () => {
 
           {leadObj && (
             <div className="overview-card" style={{ marginTop: '20px', background: '#1e293b' }}>
-              <h3>Lead Details</h3>
+              <h3>Customer Details</h3>
               {Object.entries(leadObj).map(([key, value]) => (
                 <p key={key}>
                   <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {String(value)}
