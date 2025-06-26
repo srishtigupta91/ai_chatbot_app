@@ -234,4 +234,7 @@ class ConversationHistoryView(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """save the conversation History of user and agent"""
+        conversation_history = serializer.validated_data['messages']
+        summary = generate_summary(conversation_history)
+        serializer.validated_data['summary'] = summary
         serializer.save()

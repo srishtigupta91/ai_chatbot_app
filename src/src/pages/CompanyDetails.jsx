@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Vapi from '@vapi-ai/web';
+import { QRCodeCanvas } from "qrcode.react";
 import VendorDashboard from './VendorDashboard'; // Import the chat functionality
 import './CompanyDetails.css'; // Import the CSS file for styling
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const NGROK_URL = process.env.REACT_APP_NGROK_URL;
+const BACKEND_URL = "http://localhost:8000";
+const NGROK_URL = "https://f169-2601-188-c100-8070-1d2c-7fe3-d0f0-b88a.ngrok-free.app";
+const NGROK_APP_URL = "https://7257-2601-188-c100-8070-1d2c-7fe3-d0f0-b88a.ngrok-free.app"
 
 const vapi = new Vapi('1b0458ab-2109-427f-86cb-3205bf62e457');
 
@@ -31,7 +33,9 @@ const CompanyDetails = () => {
   const [conversationHistory, setConversationHistory] = useState([]); // For Vapi messages
   const [conversationStartTime, setConversationStartTime] = useState(null);
   const [conversationEndTime, setConversationEndTime] = useState(null);
-  
+  const [showQR, setShowQR] = useState(false);
+
+  const qrUploadUrl = `${NGROK_APP_URL}/business-card/upload`;
   // Initialize Vapi with the provided API key
   useEffect(() => {
   if (!isCalling && conversationEndTime && conversationHistory.length > 0) {
@@ -168,7 +172,7 @@ const CompanyDetails = () => {
 
         try {
           setUploading(true);
-          const response = await fetch(`${BACKEND_URL}business_card/upload/`, {
+          const response = await fetch(`${NGROK_URL}/business_card/upload/`, {
             method: 'POST',
             body: formData,
           });
@@ -269,20 +273,51 @@ const CompanyDetails = () => {
     setConversationStartTime(new Date()); // Capture start time
 
     const assistantOptions = {
-      name: "jamie",
-      firstMessage: "Hello, I am Jamie from {{company_name}}, how can I help you?",
+      name: "Jane",
+      firstMessage: "{{initial_greet}}",
       voice: {
         provider: "vapi",
-        voiceId: "Elliot"
+        voiceId: "Kylie"
       },
       model: {
         model: "gpt-4.1",
         provider: "openai",
-        temperature: 0.2,
+        temperature: 0.3,
         messages: [
           {
             role: "system",
-            content: `{{conversation_prompt}}`,
+            content: `[Identity]  
+You are Jane, a friendly and efficient voice assistant for a trade show lead management system. You assist leads interested in a company's products and services.
+
+[Style]  
+- Use a warm and engaging tone.  
+- Speak clearly and naturally, offering a smooth conversational experience.  
+- Be concise and direct while maintaining politeness.
+
+[Response Guidelines]  
+- Spell out numbers and use natural contractions (e.g., we’re, I’d).  
+- Ask one question at a time, pausing for responses before proceeding.  
+- Acknowledge user responses and show active listening by referencing previous answers.  
+
+[Task & Goals]  
+1. Greet the lead with: "Hello, I'm Jane from {{company_name}} at {{event_name}}. We're excited to share our products and services with you."  
+  < wait for user response >  
+2. Provide a brief overview of the company: "{{company_info}}"  
+3. Briefly outline the products and product varieties available: "{{products_info}}", "{{product_varieties_info}}"  
+4. Ask the lead to upload their business card: "Could you kindly upload your business card for our records?"  
+  < wait for user response >  
+5. Verify the business card details by invoking the 'business_card_details' function with the provided webhook URL.  
+6. Confirm the outcome of the business card verification.  
+  - If successful, proceed with scheduling the meeting.  
+  - If verification fails, apologize and ask for alternate details: "I'm sorry, there seems to be an issue with the business card upload. Could you provide the participant email and your preferred datetime for the meeting?"  
+7. Offer to schedule a meeting: "Would you like to schedule a meeting with one of our business representatives to discuss our offerings in detail?"  
+  < wait for user response >  
+8. If the lead wishes to schedule, use the 'scheduleMeeting' tool to arrange a suitable time. Add the participant "rini.srish@gmail.com" by default. If the business card verification failed, include additional email and datetime details provided by the lead. Confirm the meeting details once arranged.
+
+[Error Handling / Fallback]  
+- If the lead’s response is unclear, politely ask for clarification: "Could you please elaborate on that?"  
+- In case of verification failure, say: "I'm sorry, there seems to be an issue with the verification. Could you provide the details manually or try uploading again?"  
+- If scheduling the meeting fails, apologize and offer to try another time: "I'm sorry, there seems to be an issue scheduling the meeting. Can we try another time or arrange it manually?"`,
           }
           
         ],
@@ -538,7 +573,7 @@ const CompanyDetails = () => {
 
     try {
       setUploading(true);
-      const response = await fetch(`${BACKEND_URL}/business_card/upload/`, {
+      const response = await fetch(`${NGROK_URL}/business_card/upload/`, {
         method: 'POST',
         body: formData,
       });
@@ -612,6 +647,12 @@ const CompanyDetails = () => {
             onClick={() => (isCalling ? stopVoiceCall() : startVoiceCall())}
           >
             {isCalling ? 'End Call' : 'Speak to Agent'}
+          </button>
+          <button
+            className="feature-button"
+            onClick={() => setShowQR(true)}
+          >
+            Upload via QR Code
           </button>
           <label className="feature-button">
             Upload Business Card
@@ -751,6 +792,18 @@ const CompanyDetails = () => {
 
       {/* Audio Elements for Voice Call */}
       <audio id="remote-audio" autoPlay></audio>
+      {showQR && (
+        <div className="qr-modal">
+          <div className="qr-modal-content">
+            <h3>Scan to Upload Business Card</h3>
+            <QRCodeCanvas value={qrUploadUrl} size={200} />
+            <p>Scan this QR code with your phone to upload your business card.</p>
+            <button className="feature-button" onClick={() => setShowQR(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
