@@ -274,7 +274,7 @@ const CompanyDetails = () => {
 
     const assistantOptions = {
       name: "Jane",
-      firstMessage: "Hello, I am Jane from {{company_name}}, how can I help you?",
+      firstMessage: "{{initial_greet}}",
       voice: {
         provider: "vapi",
         voiceId: "Kylie"
