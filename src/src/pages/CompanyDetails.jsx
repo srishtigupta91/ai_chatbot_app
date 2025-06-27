@@ -5,9 +5,9 @@ import { QRCodeCanvas } from "qrcode.react";
 import VendorDashboard from './VendorDashboard'; // Import the chat functionality
 import './CompanyDetails.css'; // Import the CSS file for styling
 
-const BACKEND_URL = "http://localhost:8000";
-const NGROK_URL = "https://f169-2601-188-c100-8070-1d2c-7fe3-d0f0-b88a.ngrok-free.app";
-const NGROK_APP_URL = "https://7257-2601-188-c100-8070-1d2c-7fe3-d0f0-b88a.ngrok-free.app"
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000'; // Fallback to local URL if BACKEND_URL is not set
+const NGROK_URL = process.env.REACT_APP_NGROK_URL || 'http://localhost:8000'; // Fallback to local URL if NGROK_URL is not set
+const NGROK_APP_URL = process.env.REACT_APP_NGROK_APP_URL || 'http://localhost:3000'; // Use environment variable or fallback to NGROK_URL
 
 const vapi = new Vapi('1b0458ab-2109-427f-86cb-3205bf62e457');
 
@@ -79,7 +79,7 @@ const CompanyDetails = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/events/`);
+        const response = await fetch(`${BACKEND_URL}/api/events/`);
         if (response.ok) {
           const data = await response.json();
           setEvents(data); // Set the fetched events
@@ -98,7 +98,7 @@ const CompanyDetails = () => {
    useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/lead/`);
+        const response = await fetch(`${BACKEND_URL}/api/lead/`);
         if (response.ok) {
           const data = await response.json();
           setLeads(data); // Set the fetched leads
@@ -233,7 +233,7 @@ const CompanyDetails = () => {
     };
 
     try {
-      const response = await fetch(`${BACKEND_URL}/events/schedule-meeting/`, {
+      const response = await fetch(`${BACKEND_URL}/api/events/schedule-meeting/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -497,7 +497,7 @@ You are Jane, a friendly and efficient voice assistant for a trade show lead man
     };
 
     try {
-      await fetch(`${BACKEND_URL}/conversation/save-chat/`, {
+      await fetch(`${BACKEND_URL}/api/conversation/save-chat/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

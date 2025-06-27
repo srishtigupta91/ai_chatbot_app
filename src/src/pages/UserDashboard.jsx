@@ -16,7 +16,7 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/companies/`);
+        const response = await axios.get(`${BACKEND_URL}/api/companies/`);
         setCompanies(response.data);
         setLoading(false);
       } catch (err) {
@@ -31,7 +31,7 @@ const UserDashboard = () => {
   const handleCompanyDoubleClick = async (company) => {
     try {
       // Fetch session_id and company details from the company-specific API
-      const response = await axios.get(`${BACKEND_URL}/companies/${company.id}/`);
+      const response = await axios.get(`${BACKEND_URL}/api/companies/${company.id}/`);
       const { session_id, data } = response.data;
 
       if (session_id) {
