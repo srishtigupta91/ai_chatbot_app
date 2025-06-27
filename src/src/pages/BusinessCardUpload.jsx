@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const BACKEND_URL = "https://f169-2601-188-c100-8070-1d2c-7fe3-d0f0-b88a.ngrok-free.app";
+const BACKEND_URL = process.env.REACT_API_NGROK_URL || 'http://localhost:8000';
 
 const BusinessCardUpload = () => {
   const [file, setFile] = useState(null);
@@ -28,7 +28,7 @@ const BusinessCardUpload = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/business_card/upload/`, {
+      const response = await fetch(`${BACKEND_URL}/api/business_card/upload/`, {
         method: "POST",
         body: formData,
       });

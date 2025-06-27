@@ -66,7 +66,7 @@ const VendorDashboard = ({ companyId, initialGreeting, conversationTranscript })
     formData.append('session_id', sessionId); // Add session_id to the payload
 
     try {
-      const response = await fetch(`${BACKEND_URL}/conversation/chat/`, {
+      const response = await fetch(`${BACKEND_URL}/api/conversation/chat/`, {
         method: 'POST',
         body: formData,
       });

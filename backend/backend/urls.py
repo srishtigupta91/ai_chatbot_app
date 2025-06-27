@@ -19,12 +19,12 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('accounts/', include('accounts.urls')),
-    path('conversation/', include('conversation.urls')),
-    path('companies/',include('company.urls')),
-    path('products/', include('products.urls')),
-    path('lead/', include('lead_profile.urls')),
-    path('events/', include('events.urls')),
-    path('business_card/', include('business_card.urls'))
+    path('api/admin/', admin.site.urls),
+    path('api/accounts/', include('accounts.urls')),
+    path('api/conversation/', include('conversation.urls')),
+    path('api/companies/',include('company.urls')),
+    path('api/products/', include('products.urls')),
+    path('api/lead/', include('lead_profile.urls')),
+    path('api/events/', include('events.urls')),
+    path('api/business_card/', include('business_card.urls'))
 ]
