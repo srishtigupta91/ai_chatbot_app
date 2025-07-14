@@ -16,7 +16,7 @@ class Conversation(models.Model):
     created_by = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
     stage = models.CharField(max_length=100, null=True, blank=True)
 
-class ConversationHistory(models.Model):
+class   ConversationHistory(models.Model):
     lead = models.ForeignKey('lead_profile.Lead', on_delete=models.CASCADE)
     session_id = models.CharField(max_length=100)
     messages = models.JSONField(default=list)

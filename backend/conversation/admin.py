@@ -12,7 +12,8 @@ class ConversationAdmin(admin.ModelAdmin):
 
 @admin.register(ConversationHistory)
 class ConversationHistoryAdmin(admin.ModelAdmin):
-    list_display = ('lead', 'summary', 'session_id')
+    list_display = ('lead', 'summary', 'session_id', 'created_at')
+    sortable_by = ('created_at',)
 
 @admin.register(PDFDocument)
 class PDFDocumentAdmin(admin.ModelAdmin):
