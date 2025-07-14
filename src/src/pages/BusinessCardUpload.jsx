@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const BACKEND_URL = process.env.REACT_API_NGROK_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://api.24-seven.ai';
 
 const BusinessCardUpload = () => {
   const [file, setFile] = useState(null);

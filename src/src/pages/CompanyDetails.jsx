@@ -5,11 +5,10 @@ import { QRCodeCanvas } from "qrcode.react";
 import VendorDashboard from './VendorDashboard'; // Import the chat functionality
 import './CompanyDetails.css'; // Import the CSS file for styling
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000'; // Fallback to local URL if BACKEND_URL is not set
-const NGROK_URL = process.env.REACT_APP_NGROK_URL || 'http://localhost:8000'; // Fallback to local URL if NGROK_URL is not set
-const NGROK_APP_URL = process.env.REACT_APP_NGROK_APP_URL || 'http://localhost:3000'; // Use environment variable or fallback to NGROK_URL
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://api.24-seven.ai'; // Fallback to local URL if BACKEND_URL is not set
+const NGROK_APP_URL = process.env.REACT_APP_NGROK_APP_URL || 'https://app.24-seven.ai'; // Use environment variable or fallback to NGROK_URL
 
-const vapi = new Vapi('1b0458ab-2109-427f-86cb-3205bf62e457');
+const vapi = new Vapi('32b497fd-17a5-4d9b-9a86-3cfbb4dc4e11');
 
 // let conversationTranscript = [];
 
@@ -35,6 +34,24 @@ const CompanyDetails = () => {
   const [conversationEndTime, setConversationEndTime] = useState(null);
   const [showQR, setShowQR] = useState(false);
 
+  // Add this function inside your CompanyDetails component
+  const fetchLeadInfoAfterQR = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/business_card/verify_info/webhook/`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLeadObj(data); // Show the fetched info in the UI
+      } else {
+        alert('Failed to fetch lead info.');
+      }
+    } catch (error) {
+      alert('An error occurred while fetching lead info.');
+    }
+  };
+
   const qrUploadUrl = `${NGROK_APP_URL}/business-card/upload`;
   // Initialize Vapi with the provided API key
   useEffect(() => {
@@ -43,37 +60,6 @@ const CompanyDetails = () => {
   }
   // eslint-disable-next-line
 }, [isCalling, conversationEndTime]);
-
-  // // Voiceflow widget integration
-  // useEffect(() => {
-  //   // Prevent multiple script injections
-  //   if (document.getElementById('voiceflow-widget')) return;
-
-  //   const script = document.createElement('script');
-  //   script.id = 'voiceflow-widget';
-  //   script.type = 'text/javascript';
-  //   script.src = 'https://cdn.voiceflow.com/widget-next/bundle.mjs';
-  //   script.onload = function () {
-  //     if (window.voiceflow && window.voiceflow.chat) {
-  //       window.voiceflow.chat.load({
-  //         verify: { projectID: '6835f0e500c7424ccd26e1e6' },
-  //         url: 'https://general-runtime.voiceflow.com',
-  //         versionID: 'development',
-  //         voice: {
-  //           url: "https://runtime-api.voiceflow.com"
-  //         }
-  //       });
-  //     }
-  //   };
-  //   document.body.appendChild(script);
-
-  //   // Optional: Cleanup script on unmount
-  //   return () => {
-  //     document.getElementById('voiceflow-widget')?.remove();
-  //     // Remove widget container if needed
-  //     document.getElementById('vf-chat-widget-container')?.remove();
-  //   };
-  // }, []);
 
   // Fetch events from the API
   useEffect(() => {
@@ -128,6 +114,10 @@ const CompanyDetails = () => {
   const uuid = generateUUID();
   const scanBusinessCardWithCamera = async () => {
     // Create a video element to show the camera stream
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Camera access is not supported in this browser or environment.');
+      return;
+    }
     const video = document.createElement('video');
     video.style.display = 'none';
     document.body.appendChild(video);
@@ -172,7 +162,7 @@ const CompanyDetails = () => {
 
         try {
           setUploading(true);
-          const response = await fetch(`${NGROK_URL}/business_card/upload/`, {
+          const response = await fetch(`${BACKEND_URL}/api/business_card/upload/`, {
             method: 'POST',
             body: formData,
           });
@@ -256,12 +246,14 @@ const CompanyDetails = () => {
 
   const handlebusinesscardupload = (leadData) => {
     // Send the uploaded business card info to Vapi for verification
-    vapi.send({
-      type: "add-message",
-      message: {
-        role: "system",
-        prompt: `The business card has been uploaded. Please verify the following details with the customer: ${JSON.stringify(leadData)}.`,
-      },
+    vapi.on("send", (msg) => {
+      msg({
+        type: "add-message",
+        message: {
+          role: "system",
+          prompt: `The business card has been uploaded. Please verify the following details with the customer: ${JSON.stringify(leadData)}.`,
+        },
+      });
     });
   };
 
@@ -273,11 +265,11 @@ const CompanyDetails = () => {
     setConversationStartTime(new Date()); // Capture start time
 
     const assistantOptions = {
-      name: "Jane",
+      name: "Jamie",
       firstMessage: "{{initial_greet}}",
       voice: {
         provider: "vapi",
-        voiceId: "Kylie"
+        voiceId: "Elliot"
       },
       model: {
         model: "gpt-4.1",
@@ -287,7 +279,7 @@ const CompanyDetails = () => {
           {
             role: "system",
             content: `[Identity]  
-You are Jane, a friendly and efficient voice assistant for a trade show lead management system. You assist leads interested in a company's products and services.
+You are Jamie, a friendly and efficient voice assistant for a trade show lead management system. You assist leads interested in a company's products and services.
 
 [Style]  
 - Use a warm and engaging tone.  
@@ -332,7 +324,7 @@ You are Jane, a friendly and efficient voice assistant for a trade show lead man
             }
           },
           "name": "business_card_details",
-          "url": `${NGROK_URL}/business_card/verify_info/webhook/`,
+          "url": `${BACKEND_URL}/api/business_card/verify_info/webhook/`,
           "method": "POST"
         },
         {
@@ -573,7 +565,7 @@ You are Jane, a friendly and efficient voice assistant for a trade show lead man
 
     try {
       setUploading(true);
-      const response = await fetch(`${NGROK_URL}/business_card/upload/`, {
+      const response = await fetch(`${BACKEND_URL}/api/business_card/upload/`, {
         method: 'POST',
         body: formData,
       });
@@ -795,12 +787,18 @@ You are Jane, a friendly and efficient voice assistant for a trade show lead man
       {showQR && (
         <div className="qr-modal">
           <div className="qr-modal-content">
-            <h3>Scan to Upload Business Card</h3>
-            <QRCodeCanvas value={qrUploadUrl} size={200} />
-            <p>Scan this QR code with your phone to upload your business card.</p>
-            <button className="feature-button" onClick={() => setShowQR(false)}>
-              Close
-            </button>
+            <h2>Scan to Upload Business Card</h2>
+            <QRCodeCanvas value={qrUploadUrl} />
+            <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+              <button
+                onClick={async () => {
+                  await fetchLeadInfoAfterQR();
+                  setShowQR(false);
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

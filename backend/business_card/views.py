@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import boto3
 import json
@@ -82,9 +82,12 @@ def extract_text_from_s3_image(bucket_name, file_name):
 # File: business_card/views.py
 @csrf_exempt
 def webhook_view(request):
+    last_lead_info = Lead.objects.filter(
+        created_at__lte=datetime.now() - timedelta(minutes=5),
+        is_recently_viewed=False
+    ).order_by('-created_at').first()
 
-    if request.method == "GET":
-        last_lead_info = Lead.objects.all().order_by('-created_at').first()
+    if last_lead_info:
         name = last_lead_info.full_name
         email = last_lead_info.email
         phone = last_lead_info.phone
@@ -95,22 +98,16 @@ def webhook_view(request):
             "lead_id": last_lead_info.id,
             "address": last_lead_info.location
         }
+    else:
+        return JsonResponse({"message": "No lead info found"})
+
+    if request.method == "GET":
         return JsonResponse(lead_info)
 
     if request.method == "POST":
+        last_lead_info.is_recently_viewed = True
+        last_lead_info.save()
         try:
-            last_lead_info = Lead.objects.all().order_by('-created_at').first()
-            name = last_lead_info.full_name
-            email = last_lead_info.email
-            phone = last_lead_info.phone
-            lead_info = {
-                "email": email,
-                "phone": phone,
-                "full_name": name,
-                "lead_id": last_lead_info.id,
-                "address": last_lead_info.location
-            }
-
             return JsonResponse({
               "type": "say",
               "message": f"Thanks for uploading your business card. I found the following details: {lead_info}. Is that correct?"
@@ -136,7 +133,7 @@ class ExtractBusinessCardDetailsView(APIView):
         # Load the image
         image = request.FILES['file']
         file_name = image.name
-        bucket_name = 'ai-engagement-app-bucket-1'
+        bucket_name = 'ai-engagement-app-bucket-2'
 
         # Upload the image to S3 and get the URL
         try:
@@ -155,7 +152,7 @@ class ExtractBusinessCardDetailsView(APIView):
             SystemMessage(
                 content=f"""You are an expert business card scanner. Analyze the provided image of a business card and extract the contact information. Structure the output strictly as a JSON object following this Pydantic model format:
 
-{self.output_parser.schema_json(indent=2)}
+{json.loads(self.output_parser.schema_json(indent=2))}
 
 Extract only the information visible on the card. If a field is not present, omit it or set it to null/empty string as appropriate based on the format instructions. Do not infer information not present. Pay close attention to names, titles, company names, emails, phone numbers, websites, and any location details. Respond ONLY with the JSON object."""
             ),
@@ -165,6 +162,7 @@ Extract only the information visible on the card. If a field is not present, omi
         ]
 
         # Invoke the OpenAI client
+        print(prompt_messages)
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4o",
